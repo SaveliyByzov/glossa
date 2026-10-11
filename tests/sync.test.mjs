@@ -261,3 +261,18 @@ test('без сети — тихо откладывается; пустой endp
   await assert.rejects(() => failing.createProfile());
   assert.equal(failing.hasProfile, false);
 });
+
+test('flush: после законченного урока уходит сразу, даже когда экран занят (busy)', async () => {
+  const server = fakeServer();
+  const A = device(server), B = device(server);
+  const phrase = await A.s.createProfile();
+  await B.s.joinProfile(phrase);
+  A.s.hooks.busy = () => true;
+  A.store.update((s) => { s.achievements.lessonDone = 1; });
+  await A.s.sync();                                      // обычная синхронизация ждёт конца упражнения
+  await B.s.sync();
+  assert.ok(!B.store.state.achievements.lessonDone);
+  assert.equal(await A.s.flush(), true);                 // flush не ждёт
+  await B.s.sync();
+  assert.ok(B.store.state.achievements.lessonDone);
+});
