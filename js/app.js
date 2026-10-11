@@ -12,6 +12,7 @@ import * as courseView from './views/course.js';
 import * as intro from './views/lesson-intro.js';
 import * as reviewView from './views/review.js';
 import * as vocabView from './views/vocab.js';
+import * as wordsView from './views/words.js';
 import * as profileView from './views/profile.js';
 import * as sessionView from './views/session.js';
 
@@ -34,6 +35,8 @@ route('/c/:cid/skill/:skill', sessionView.skillSession);
 route('/c/:cid/u/:uid/boss', sessionView.bossSession);
 route('/c/:cid/u/:uid/placement', sessionView.placementSession);
 route('/c/:cid/vocab', vocabView.render);
+route('/c/:cid/words', wordsView.render);
+route('/c/:cid/words/play/:mode/:src/:n', sessionView.wordsSession);
 
 // --- оболочка ----------------------------------------------------------------------------
 const shell = {
@@ -93,7 +96,7 @@ function drawTabbar() {
   tabbar.replaceChildren(
     item('home', '#/', 'book', 'Курсы'),
     item('review', last ? `#/c/${last}/review` : '#/', 'repeat', 'Повторение', due),
-    item('vocab', last ? `#/c/${last}/vocab` : '#/', 'dict', 'Словарь'),
+    item('words', last ? `#/c/${last}/words` : '#/', 'cards', 'Лексика'),
     item('profile', '#/profile', 'user', 'Профиль'));
 }
 

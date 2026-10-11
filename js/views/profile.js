@@ -4,7 +4,7 @@ import { store, downloadBackup } from '../store.js';
 import { config } from '../config.js';
 import { dayKey, plural } from '../util.js';
 import { rankFor, currentStreak, dailyGoal, achievementProgress, checkGoal, vacationLeft, activeVacation, startVacation, endVacation, shiftDay } from '../gamify.js';
-import { toast, confirmDialog, applyTheme } from '../ui.js';
+import { toast, confirmDialog, applyTheme, applyStyle } from '../ui.js';
 import { ttsSupported } from '../tts.js';
 import { view, section, progress, roman, fmtNum } from './common.js';
 
@@ -16,6 +16,7 @@ export async function render(_, shell) {
   const frLabel = h('small', null, icon('snow'), ` ${fr} ${plural(fr, ['заморозка', 'заморозки', 'заморозок'])}`);
   el.append(h('section', { class: 'section' }, h('h3', { class: 'section__title' }, 'Серия', frLabel), streakCalendar(state)));
   el.append(achievements(state));
+  el.append(appearance(state));
   el.append(settings(state, shell));
   return { el, title: 'Профиль', tab: 'profile' };
 }
@@ -123,6 +124,19 @@ function setting(label, hint, control, stack = false) {
     control);
 }
 
+/** Оформление: стиль (игровое / типографичное / скрипторий) + цветовая тема (авто / светлая / тёмная). */
+function appearance(state) {
+  const st = state.settings;
+  const set = (k, v) => store.update((s) => { s.settings[k] = v; });
+  const rows = [
+    setting('Стиль', 'Игровое — яркое, с островами и пружинными кнопками. Типографичное — крупный шрифт и строгая сетка. Скрипторий — прежняя «рукописная» тема.',
+      segmented([['b', 'Игровое'], ['c', 'Типографика'], ['scriptorium', 'Скрипторий']], ['c', 'scriptorium'].includes(st.style) ? st.style : 'b', (v) => { set('style', v); applyStyle(v); }, 'Стиль оформления'), true),
+    setting('Цвет', null,
+      segmented([['auto', 'Авто'], ['light', 'Светлая'], ['dark', 'Тёмная']], st.theme || 'auto', (t) => { set('theme', t); applyTheme(t); }, 'Цветовая тема'), true),
+  ];
+  return section('Оформление', null, h('div', { class: 'settings' }, rows));
+}
+
 function settings(state, shell) {
   const st = state.settings;
   const set = (k, v) => store.update((s) => { s.settings[k] = v; });
@@ -130,8 +144,6 @@ function settings(state, shell) {
 
   rows.push(setting('Цель на день', 'Можно менять в любой момент — прогресс не теряется.',
     goalChips(config.dailyGoals, dailyGoal(state), (g) => { store.update((s) => { s.settings.dailyGoal = g; checkGoal(s); }); }), true));
-  rows.push(setting('Тема', null,
-    segmented([['auto', 'Авто'], ['light', 'Светлая'], ['dark', 'Тёмная']], st.theme || 'auto', (t) => { set('theme', t); applyTheme(t); }, 'Тема оформления')));
   if ('vibrate' in navigator) rows.push(setting('Вибрация', 'Короткий отклик на ответы.', switchBtn(st.haptics, (v) => set('haptics', v), 'Вибрация')));
   if (ttsSupported()) rows.push(setting('Озвучка', 'Только если в системе есть голос языка (норвежский, итальянский, сербский).', switchBtn(st.tts, (v) => set('tts', v), 'Озвучка')));
   rows.push(setting('Повторение по всем языкам', 'Блоки по 3–5 заданий одного языка — без мелкого перемешивания.',

@@ -6,10 +6,11 @@ import { courseState as emptyCourseState } from './store.js';
 import { dayKey } from './util.js';
 import { review as srsReview, newCard, gradeFromResult, gradeFromAccuracy, addMistake, resolveMistake } from './srs.js';
 import { addXp, checkAchievements } from './gamify.js';
+import { noteWordResult } from './words.js';
 import { effective, recordLessonSession, grantMastery, lessonSkills, skillLevels } from './mastery.js';
 
 /**
- * @param mode 'lesson' | 'review' | 'boss' | 'placement' | 'skill' | 'retry'
+ * @param mode 'lesson' | 'review' | 'words' | 'boss' | 'placement' | 'skill' | 'retry'
  * @param opts { lesson?, unit?, course }
  */
 export function startRun(state, mode, items, opts = {}) {
@@ -57,13 +58,14 @@ export function recordAnswer(state, run, item, result, now = Date.now()) {
     // SRS лексем
     const applyTo = config.srs.applyTo || ['vocab', 'skills'];
     if (applyTo.includes('vocab')) {
-      const grade = gradeFromResult(result);
+      const grade = result.grade || gradeFromResult(result);   // карточки слов сами задают again/hard/good/easy
       for (const id of [item.ref.vocab, ...(item.ref.vocabList || [])].filter(Boolean)) {
         const key = `v:${id}`;
         const g = item.ref.vocabList && !item.ref.vocab ? (ok ? 'good' : 'hard') : grade;
         cs.srs[key] = srsReview(cs.srs[key], g, now, config.srs);
       }
     }
+    if (item.ref.vocab) noteWordResult(cs, item.ref.vocab, ok);
     // навыки — оцениваются по точности за сессию (см. finishRun)
     if (item.ref.skill) {
       const k = `${item.course.id}|${item.ref.skill}`;
@@ -78,11 +80,11 @@ export function recordAnswer(state, run, item, result, now = Date.now()) {
       fixed = resolveMistake(cs.mistakes, item.ref.key, today, now, config.mistakes);
       if (fixed) { state.stats.mistakesFixed = (state.stats.mistakesFixed || 0) + 1; run.fixed += 1; xp += config.xp.mistakeFixed ?? 0; }
     }
-    if (run.mode === 'review') state.stats.reviews += 1;
+    if (run.mode === 'review' || run.mode === 'words') state.stats.reviews += 1;
   }
 
   if (ok) {
-    if (run.mode === 'review' || run.mode === 'skill') xp += config.xp.review ?? 5;
+    if (run.mode === 'review' || run.mode === 'skill' || run.mode === 'words') xp += config.xp.review ?? 5;
     else xp += (config.xp.correct ?? 10) + (firstTry && !result.almost && !testMode(run.mode) ? config.xp.firstTry ?? 0 : 0);
   }
   xp = Math.round(xp * run.xpFactor);

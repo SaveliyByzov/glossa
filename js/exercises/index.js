@@ -8,8 +8,9 @@ import * as paradigm from './paradigm.js';
 import * as classify from './classify.js';
 import * as transform from './transform.js';
 import * as fix from './fix.js';
+import * as flashcard from './flashcard.js';
 
-export const TYPES = { choice, cloze, translate, order, match, paradigm, classify, transform, fix };
+export const TYPES = { choice, cloze, translate, order, match, paradigm, classify, transform, fix, flashcard };
 
 export function renderExercise(ex, ctx) {
   const mod = TYPES[ex.type];
