@@ -1,7 +1,7 @@
 // Раздел «Профиль и синхронизация»: анонимный профиль-фраза, статус, перенос без сервера.
 import { h, icon, clear } from '../dom.js';
 import { store } from '../store.js';
-import { toast, confirmDialog, applyTheme } from '../ui.js';
+import { toast, confirmDialog } from '../ui.js';
 import { section } from './common.js';
 import { sync, formatPhrase, encodeTransfer, decodeTransfer, mergeKeepLocal } from '../sync.js';
 import { qrPath } from '../qr.js';
@@ -163,9 +163,8 @@ export function syncSection(shell) {
       h('div', { class: 'btn-row' }, btn('Объединить с кодом', () => run(async () => {
         const remote = await decodeTransfer(area.value);
         store.replaceState(mergeKeepLocal(store.state, remote));
-        applyTheme();
+        sync.hooks.onApplied();                       // тема/алфавит и перерисовка экрана
         area.value = '';
-        shell.reload();
       }, 'Прогресс объединён'))));
   }
 
