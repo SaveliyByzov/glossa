@@ -19,6 +19,7 @@ import { todayXp, dailyGoal, currentStreak } from '../gamify.js';
 import { view, empty, progress, setProgress, mastery, ledgerRow } from './common.js';
 import { theory } from './theory.js';
 import { plural } from '../util.js';
+import { sync } from '../sync.js';
 
 // --- точки входа (маршруты) ----------------------------------------------------------
 
@@ -318,6 +319,7 @@ function run(shell, opts) {
     phase = 'done';
     const summary = finishRun(state, r, opts.courses || [course]);
     store.save();
+    sync.flush();                                  // после каждой законченной сессии — сразу в облако (если есть профиль)
     vibrate('done');
     shell.replace(resultView(summary));
   }

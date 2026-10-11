@@ -167,7 +167,7 @@ export function createSync({
     } finally { timers.clear(t); }
   }
 
-  async function runOnce({ mustExist }) {
+  async function runOnce({ mustExist, ignoreBusy = false }) {
     const idn = await identity();
     if (!idn) return;
     for (let attempt = 0; attempt < 4; attempt++) {
@@ -181,7 +181,7 @@ export function createSync({
         updated = Number(res.headers.get('X-Updated')) || 0;
       } else throw httpError(res.status);
 
-      if (hooks.busy()) { setStatus('waiting', 'Синхронизация начнётся после упражнения'); schedule(5000); return; }
+      if (!ignoreBusy && hooks.busy()) { setStatus('waiting', 'Синхронизация начнётся после упражнения'); schedule(5000); return; }
 
       const local = st.state;
       if (remote) {
@@ -221,17 +221,17 @@ export function createSync({
   }
 
   /** Полная синхронизация. Параллельные вызовы объединяются. */
-  function sync({ mustExist = false } = {}) {
+  function sync({ mustExist = false, ignoreBusy = false } = {}) {
     if (!base || !readIdent()) return Promise.resolve(false);
     if (running) return running;
     if (!online()) { setStatus('waiting', 'Ждёт сети'); return Promise.resolve(false); }
     setStatus('syncing');
-    running = runOnce({ mustExist })
+    running = runOnce({ mustExist, ignoreBusy })
       .then(() => true)
       .catch((err) => {
         if (err.code === 'notfound') { setStatus('error', err.message); throw err; }
         if (err.code === 'offline') setStatus('waiting', 'Ждёт сети');
-        else setStatus('error', err instanceof SyncError ? err.message : 'Ошибка синхронизации');
+        else { setStatus('error', err instanceof SyncError ? err.message : 'Ошибка синхронизации'); if (err.code !== 'ratelimit') schedule(60_000); else schedule(120_000); }
         return false;
       })
       .finally(() => { running = null; });
@@ -255,6 +255,8 @@ export function createSync({
     onStatus(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     setNickname(name) { const i = readIdent(); if (i) writeIdent({ ...i, nickname: String(name).trim().slice(0, 40) }); },
     sync, schedule,
+    /** Немедленная синхронизация (после законченного урока): без debounce, даже посреди экрана результата. */
+    flush() { timers.clear(timer); timer = null; return sync({ ignoreBusy: true }); },
 
     /** Создать новый профиль: фраза рождается здесь, текущий прогресс уходит (зашифрованным) на сервер. */
     async createProfile() {
