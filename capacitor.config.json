@@ -1,0 +1,12 @@
+{
+  "appId": "app.glossa.grammar",
+  "appName": "Glossa",
+  "webDir": "www",
+  "backgroundColor": "#f6f3ee",
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "never"
+  }
+}
