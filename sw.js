@@ -1,6 +1,6 @@
 // Service Worker Glossa — СГЕНЕРИРОВАН tools/build-sw.mjs, не редактируйте вручную.
 // Стратегия: cache-first для всего приложения; новые версии — по сообщению SKIP_WAITING из приложения.
-const VERSION = '363a5bcee90e';
+const VERSION = '50087d21fcec';
 const CACHE = `glossa-${VERSION}`;
 const PRECACHE = [
   "./",
@@ -8,6 +8,7 @@ const PRECACHE = [
   "./css/dev.css",
   "./css/style-b.css",
   "./css/style-c.css",
+  "./css/sync.css",
   "./css/tokens.css",
   "./data/ang/index.js",
   "./data/ang/u01.ex.js",
@@ -103,6 +104,7 @@ const PRECACHE = [
   "./data/sr/u09.js",
   "./data/sr/u10.ex.js",
   "./data/sr/u10.js",
+  "./data/sync.js",
   "./icons/apple-touch-icon.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
@@ -132,11 +134,14 @@ const PRECACHE = [
   "./js/gamify.js",
   "./js/markup.js",
   "./js/mastery.js",
+  "./js/merge.js",
   "./js/progress.js",
+  "./js/qr.js",
   "./js/router.js",
   "./js/session.js",
   "./js/srs.js",
   "./js/store.js",
+  "./js/sync.js",
   "./js/tts.js",
   "./js/ui.js",
   "./js/util.js",
@@ -147,6 +152,7 @@ const PRECACHE = [
   "./js/views/profile.js",
   "./js/views/review.js",
   "./js/views/session.js",
+  "./js/views/sync-section.js",
   "./js/views/theory.js",
   "./js/views/vocab.js",
   "./js/views/words.js",

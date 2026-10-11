@@ -4,6 +4,8 @@ import { store } from './store.js';
 import { loadConfig } from './config.js';
 import { route, start, currentPath, match } from './router.js';
 import { applyTheme, toast } from './ui.js';
+import { sync } from './sync.js';
+import { joinFromLink } from './views/sync-section.js';
 import { todayXp, dailyGoal, currentStreak } from './gamify.js';
 import { dueBreakdown } from './views/review.js';
 import { empty, fmtNum } from './views/common.js';
@@ -25,6 +27,13 @@ let routeToken = 0;
 // --- маршруты ---------------------------------------------------------------------------
 route('/', home.render);
 route('/profile', profileView.render);
+route('/join/:phrase', async ({ phrase }, sh) => {
+  // фраза из ссылки сразу уходит из адресной строки и истории; хэш на сервер не отправляется
+  history.replaceState(null, '', `${location.pathname}${location.search}#/profile`);
+  const meta = await profileView.render({}, sh);
+  setTimeout(() => joinFromLink(phrase, sh), 0);
+  return meta;
+});
 route('/review/all', sessionView.crossSession);
 route('/c/:cid', courseView.render);
 route('/c/:cid/l/:lid', intro.render);
@@ -152,6 +161,10 @@ async function boot() {
   store.subscribe(() => { drawTopbar(); drawTabbar(); });
   // прогресс мог измениться в другой вкладке
   addEventListener('storage', (e) => { if (e.key === 'glossa:v1') { store.load(); shell.reload(); } });
+  // облачная синхронизация (если в data/sync.js задан endpoint и создан профиль)
+  sync.hooks.busy = () => !!current?.focus;                       // не трогаем состояние посреди упражнения
+  sync.hooks.onApplied = () => { applyTheme(); if (!current?.focus) shell.reload(); };
+  sync.start();
   start(onRoute);
   registerSW();
 }
