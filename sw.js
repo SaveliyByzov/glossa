@@ -1,6 +1,6 @@
 // Service Worker Glossa — СГЕНЕРИРОВАН tools/build-sw.mjs, не редактируйте вручную.
 // Стратегия: cache-first для всего приложения; новые версии — по сообщению SKIP_WAITING из приложения.
-const VERSION = 'a28bfbb533a3';
+const VERSION = '50087d21fcec';
 const CACHE = `glossa-${VERSION}`;
 const PRECACHE = [
   "./",
