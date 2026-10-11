@@ -8,7 +8,7 @@ export function emptyState() {
     app: 'glossa',
     version: SCHEMA_VERSION,
     createdAt: Date.now(),
-    settings: { theme: 'auto', dailyGoal: null, haptics: true, tts: true, crossLanguage: null },
+    settings: { theme: 'auto', style: 'b', dailyGoal: null, haptics: true, tts: true, crossLanguage: null },
     stats: {
       xpTotal: 0,
       xpByDay: {},             // 'YYYY-MM-DD' → XP
@@ -37,6 +37,7 @@ export function courseState() {
     units: {},                 // unitId → { placement?: {at, acc}, boss?: {passed, perfect, at} }
     srs: {},                   // 'v:<vocabId>' | 's:<skillId>' → карточка SRS
     mistakes: [],              // банк ошибок (см. js/srs.js)
+    wordErrors: {},            // vocabId → { n: ошибок всего, streak: верных подряд после последней } (js/words.js)
     seen: {},                  // ключ упражнения → время последнего показа
     skillLevels: {},           // кэш мастерства навыков (для достижений)
     startedAt: Date.now(),

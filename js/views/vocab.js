@@ -20,12 +20,12 @@ function wordLevel(card) {
 
 export async function render({ cid }) {
   const course = await loadCourse(cid);
-  if (!course) return { el: view('vocab', empty({ title: 'Курс недоступен', action: { href: '#/', label: 'К курсам' } })), title: 'Словарь', tab: 'vocab' };
+  if (!course) return { el: view('vocab', empty({ title: 'Курс недоступен', action: { href: '#/', label: 'К курсам' } })), title: 'Словарь', tab: 'words', back: `#/c/${cid}/words` };
   store.update((s) => { s.lastCourse = cid; });
   const cs = store.state.courses[cid];
   const ctx = { lang: course.tts || cid, speak: speakerFor(course) };
   const el = view('vocab');
-  const meta = { el, title: 'Словарь', tab: 'vocab', lang: cid, back: `#/c/${cid}`, stats: h('span', { class: 'badge' }, `${course.allVocab.length} слов`) };
+  const meta = { el, title: 'Словарь', tab: 'words', lang: cid, back: `#/c/${cid}/words`, stats: h('span', { class: 'badge' }, `${course.allVocab.length} слов`) };
 
   if (!course.allVocab.length) {
     el.append(empty({ title: 'Словарь пуст', text: 'Лексика появится вместе с уроками.' }));

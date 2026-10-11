@@ -133,7 +133,8 @@ js/app.js                        — оболочка, маршруты, рег�
 js/router.js store.js config.js courses.js markup.js answer.js srs.js mastery.js gamify.js
 js/session.js progress.js tts.js ui.js dom.js util.js
 js/exercises/<type>.js           — 9 типов упражнений + autogen.js (упражнения из лексики)
-js/views/*.js                    — экраны: home, course, lesson-intro, session (+ результат), review, vocab, profile
+js/words.js                      — «Лексика»: выбор слов, трудные слова, дистракторы форм, сборка сессии (js/exercises/flashcard.js — карточка)
+js/views/*.js                    — экраны: home, course, lesson-intro, session (+ результат), review, vocab (словарь-справочник), words (хаб «Лексика»), profile
 tools/                           — build-sw, build-www, serve, validate, make-icons.py
 tests/                           — node:test
 ```

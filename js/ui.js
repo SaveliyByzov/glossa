@@ -67,10 +67,20 @@ export function confirmDialog({ title, text = '', ok = 'Да', cancel = 'Отм�
 }
 
 // --- тема ----------------------------------------------------------------------------------
+export const STYLES = ['b', 'c', 'scriptorium'];
+
+/** Оформление: data-style на <html> (b — игровое, c — типографичное, scriptorium — прежнее). */
+export function applyStyle(style = store.state.settings.style) {
+  document.documentElement.dataset.style = STYLES.includes(style) ? style : 'b';
+}
+
 export function applyTheme(theme = store.state.settings.theme) {
   const root = document.documentElement;
   if (theme === 'light' || theme === 'dark') root.dataset.theme = theme;
   else delete root.dataset.theme;
+  // data-mode — всегда «light» или «dark» (разрешённая тема): на него опираются css/style-*.css
+  root.dataset.mode = theme === 'light' || theme === 'dark' ? theme : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  applyStyle();
   // theme-color: при ручной теме обе meta (light/dark) получают цвет фона выбранной темы
   for (const meta of document.querySelectorAll('meta[name="theme-color"]')) {
     const own = meta.media?.includes('dark') ? '#15171d' : '#f6f3ee';
@@ -79,3 +89,21 @@ export function applyTheme(theme = store.state.settings.theme) {
 }
 
 export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Оформление B: буквы языка разлетаются над экраном итога (WAAPI; без движения при reduced-motion). */
+export function celebrate(host, letters) {
+  if (document.documentElement.dataset.style !== 'b' || reducedMotion() || !host?.animate || !letters?.length) return;
+  const colors = ['var(--accent)', 'var(--gold)', 'var(--streak)', 'var(--ok)'];
+  for (let i = 0; i < 16; i++) {
+    const s = h('span', { class: 'confetti-letter tl', 'aria-hidden': 'true' }, letters[i % letters.length]);
+    s.style.color = colors[i % colors.length];
+    s.style.fontSize = `${26 + Math.random() * 30}px`;
+    host.append(s);
+    const a = Math.random() * Math.PI * 2, r = 90 + Math.random() * 130;
+    s.animate([
+      { transform: 'translate(-50%,-50%) scale(.4)', opacity: 0 },
+      { transform: `translate(calc(-50% + ${Math.cos(a) * r * 0.6}px), calc(-50% + ${Math.sin(a) * r * 0.6}px)) scale(1) rotate(${Math.random() * 90 - 45}deg)`, opacity: 1, offset: 0.35 },
+      { transform: `translate(calc(-50% + ${Math.cos(a) * r}px), calc(-50% + ${Math.sin(a) * r + 90}px)) scale(.9) rotate(${Math.random() * 180 - 90}deg)`, opacity: 0 },
+    ], { duration: 1400 + Math.random() * 600, delay: 150 + i * 22, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'both' }).onfinish = () => s.remove();
+  }
+}

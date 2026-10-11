@@ -9,11 +9,12 @@ import { config } from '../config.js';
 import { loadCourse, listCourses } from '../courses.js';
 import { renderExercise } from '../exercises/index.js';
 import { speakerFor } from '../tts.js';
-import { toast, vibrate, announce, confirmDialog } from '../ui.js';
+import { celebrate, toast, vibrate, announce, confirmDialog } from '../ui.js';
 import { go } from '../router.js';
 import { startRun, recordAnswer, finishRun } from '../progress.js';
 import { buildLesson, buildReview, buildBoss, buildPlacement, buildSkillTraining, buildRetry, crossLanguageBlocks } from '../session.js';
 import { nextLesson, lessonOpen } from '../mastery.js';
+import { buildWords } from '../words.js';
 import { todayXp, dailyGoal, currentStreak } from '../gamify.js';
 import { view, empty, progress, setProgress, mastery, ledgerRow } from './common.js';
 import { theory } from './theory.js';
@@ -65,6 +66,14 @@ export async function crossSession(_, shell) {
   return run(shell, { mode: 'review', items, course: null, courses, exit: '#/', title: 'Повторение' });
 }
 
+/** Тренировка лексики: /c/:cid/words/play/:mode/:src/:n — режим, источник слов, длина (0 — все). */
+export async function wordsSession({ cid, mode, src, n }, shell) {
+  const course = await loadCourse(cid);
+  if (!course) return missing(cid);
+  const items = buildWords(course, store.course(cid), { source: src, mode, length: Number(n) || 0 });
+  return run(shell, { mode: 'words', items, course, exit: `#/c/${cid}/words`, title: 'Лексика' });
+}
+
 function missing(cid, title = 'Нечего показать') {
   const back = cid ? `#/c/${cid}` : '#/';
   return { el: view('review', empty({ title, action: { href: back, label: 'Назад' } })), title: 'Сессия', back, lang: cid };
@@ -94,8 +103,9 @@ function run(shell, opts) {
   const { items, course, exit } = opts;
   if (!items.length) {
     const review = opts.mode === 'review';
-    const text = review ? 'Всё свежо в памяти. Загляните позже или пройдите новый урок.' : 'Для этого раздела пока нет упражнений.';
-    return { el: view('review', empty({ title: review ? 'На сегодня всё повторено' : 'Пока пусто', text, action: { href: exit, label: 'Назад' } })), title: opts.title, back: exit, lang: course?.id, tab: review ? 'review' : undefined };
+    const words = opts.mode === 'words';
+    const text = review ? 'Всё свежо в памяти. Загляните позже или пройдите новый урок.' : words ? 'В выбранном наборе нет подходящих слов. Выберите другой источник или режим.' : 'Для этого раздела пока нет упражнений.';
+    return { el: view('review', empty({ title: review ? 'На сегодня всё повторено' : words ? 'Нет слов для тренировки' : 'Пока пусто', text, action: { href: exit, label: 'Назад' } })), title: opts.title, back: exit, lang: course?.id, tab: review ? 'review' : undefined };
   }
 
   const state = store.state;
@@ -133,6 +143,7 @@ function run(shell, opts) {
       speak: speakerFor(c),
       changed: () => { checkBtn.disabled = !ctrl?.ready(); },
       submit: () => check(),
+      answer: (res) => commit(res),     // упражнения без «Проверить» (карточки слов)
       autoCheck: () => setTimeout(check, 250),
       vibrate,
     };
@@ -170,6 +181,7 @@ function run(shell, opts) {
     undoBtn.hidden = !ctrl.undo;
     tools.hidden = ruleBtn.hidden && undoBtn.hidden;
     checkBtn.disabled = !ctrl.ready();
+    footer.hidden = !!ctrl.instant;
     if (!isTouch() || ctrl.usesInput) ctrl.focus?.();
   }
 
@@ -204,6 +216,16 @@ function run(shell, opts) {
     if (isTouch()) document.activeElement?.blur?.();
     showFeedback(result, xp, fixed);
     vibrate(result.correct ? 'ok' : 'error');
+  }
+
+  /** Оценка без листа обратной связи: записать и сразу к следующему. */
+  function commit(result) {
+    if (phase !== 'answer') return;
+    phase = 'feedback';
+    recordAnswer(state, r, item, result);
+    store.save();
+    vibrate(result.correct ? 'ok' : 'error');
+    advance();
   }
 
   function showFeedback(res, xp, fixed) {
@@ -278,6 +300,10 @@ function run(shell, opts) {
       return;
     }
     if (ruleSheet.classList.contains('is-open')) return;
+    if (ctrl?.instant) {      // карточки: пробел/Enter — перевернуть, 1–4 — оценка
+      if (phase === 'answer' && !e.target.matches?.('input, textarea') && ctrl.key?.(e)) e.preventDefault();
+      return;
+    }
     if (e.key === 'Enter') {
       if (e.defaultPrevented || e.isComposing || e.shiftKey) return;
       e.preventDefault();   // и отменяет «клик» по сфокусированной кнопке — без двойного срабатывания
@@ -335,14 +361,15 @@ function run(shell, opts) {
         }))));
     }
     res.append(box);
+    if (t.ok) setTimeout(() => celebrate(box, course?.keyboard?.filter?.((k) => typeof k === 'string' && k.length <= 2)), 120);
 
     const primary = nextAction(s);
     const actions = h('div', { class: 'view__actions' },
       h('a', { class: 'btn btn--primary btn--block', href: primary.href, id: 'result-next' }, primary.label, ' ', h('span', { class: 'btn__hint' }, 'Enter')));
     if (s.mistakes.length && opts.mode !== 'placement' && opts.mode !== 'boss') {
       actions.append(h('button', { class: 'btn btn--ghost btn--block', type: 'button', onclick: () => {
-        shell.replace(run(shell, { ...opts, mode: 'retry', items: buildRetry(s.mistakes.map((m) => m.item)), title: 'Разбор ошибок' }));
-      } }, 'Разобрать ошибки'));
+        shell.replace(run(shell, { ...opts, mode: opts.mode === 'words' ? 'words' : 'retry', items: buildRetry(s.mistakes.map((m) => m.item)), title: opts.mode === 'words' ? 'Лексика' : 'Разбор ошибок' }));
+      } }, opts.mode === 'words' ? 'Повторить ошибки' : 'Разобрать ошибки'));
     }
     res.append(actions);
 
@@ -358,7 +385,7 @@ function run(shell, opts) {
       const next = nextLesson(course, state.courses[course.id]);
       if (s.mastery?.after >= 1 && next && next.id !== opts.lesson.id) return { href: `#/c/${course.id}/l/${next.id}`, label: 'Следующий урок' };
     }
-    if (opts.mode === 'review' || opts.mode === 'skill' || opts.mode === 'retry') return { href: exit, label: 'Готово' };
+    if (opts.mode === 'review' || opts.mode === 'skill' || opts.mode === 'retry' || opts.mode === 'words') return { href: exit, label: 'Готово' };
     return { href: `#/c/${course.id}`, label: 'К карте курса' };
   }
 
@@ -376,6 +403,7 @@ function resultTexts(s, opts) {
       ? { ok: true, title: 'Входной тест пройден', sub: `Зачтено ${s.placement.granted.length} ${plural(s.placement.granted.length, ['урок', 'урока', 'уроков'])}. Остальное — по порядку.` }
       : { ok: false, title: 'Тест завершён', sub: 'Юнит открыт; ошибки теста — в банке ошибок для повторения.' };
     case 'review': return { ok: true, title: 'Повторение завершено', sub: s.fixed ? `Исправлено ошибок: ${s.fixed}.` : `Точность ${pct} %.` };
+    case 'words': return { ok: s.accuracy >= 0.6, title: s.perfect ? 'Все слова на месте' : 'Слова потренированы', sub: s.mistakes.length ? `Слов с ошибками: ${s.mistakes.length}. Они вернутся в «трудных».` : `Точность ${pct} %.` };
     case 'retry': return { ok: true, title: 'Ошибки разобраны', sub: `Точность ${pct} %.` };
     case 'skill': return { ok: true, title: 'Тренировка завершена', sub: opts.title };
     default:

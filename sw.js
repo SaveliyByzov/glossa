@@ -1,11 +1,13 @@
 // Service Worker Glossa — СГЕНЕРИРОВАН tools/build-sw.mjs, не редактируйте вручную.
 // Стратегия: cache-first для всего приложения; новые версии — по сообщению SKIP_WAITING из приложения.
-const VERSION = '2a16db2b1b1f';
+const VERSION = '363a5bcee90e';
 const CACHE = `glossa-${VERSION}`;
 const PRECACHE = [
   "./",
   "./css/app.css",
   "./css/dev.css",
+  "./css/style-b.css",
+  "./css/style-c.css",
   "./css/tokens.css",
   "./data/ang/index.js",
   "./data/ang/u01.ex.js",
@@ -119,6 +121,7 @@ const PRECACHE = [
   "./js/exercises/cloze.js",
   "./js/exercises/common.js",
   "./js/exercises/fix.js",
+  "./js/exercises/flashcard.js",
   "./js/exercises/index.js",
   "./js/exercises/match.js",
   "./js/exercises/order.js",
@@ -146,6 +149,8 @@ const PRECACHE = [
   "./js/views/session.js",
   "./js/views/theory.js",
   "./js/views/vocab.js",
+  "./js/views/words.js",
+  "./js/words.js",
   "./manifest.webmanifest"
 ];
 

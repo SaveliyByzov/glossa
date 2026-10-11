@@ -50,7 +50,7 @@ function choice(item, pool, dir, rnd) {
   };
 }
 
-function translate(item, dir) {
+export function translate(item, dir) {
   const toTarget = dir === 'toTarget';
   return {
     type: 'translate', level: 2, auto: true, _vocab: item.id, dir,
@@ -67,11 +67,11 @@ function match(items, rnd) {
   return { type: 'match', level: 1, auto: true, _vocabList: items.map((v) => v.id), pairs };
 }
 
-function explainFor(v) {
+export function explainFor(v) {
   const parts = [`**${v.w}** — ${v.ru}`];
   if (v.forms) parts.push(`Формы: *${v.forms}*`);
   if (v.ex) parts.push(`${v.ex}${v.exRu ? ` — ${v.exRu}` : ''}`);
-  return parts.join('. ');
+  return parts.map((p) => (/[.!?…]$/.test(p) ? p : `${p}.`)).join(' ');
 }
 
 /**
